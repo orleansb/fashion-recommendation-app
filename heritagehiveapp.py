@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import joblib
+import json
 import os
 import base64
 from tensorflow import keras
@@ -9,6 +10,8 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+import gspread
+from google.oauth2 import service_account
 
 #Path to your background image
 background_image = "static/back_images.jpg"
@@ -255,6 +258,24 @@ if st.button("Get Recommendations"):
                     st.write("Image not found")  # Debugging: Indicate if the image is missing
 
 # Add a section for rating the prediction accuracy
+# Function to save responses to Google Sheets
+def save_to_google_sheets(data):
+
+    # Authenticate with Google Sheets API
+    credentials_json = os.getenv("GOOGLE_CREDENTIALS")
+    credentials_info = json.loads(credentials_json)
+    credentials = service_account.Credentials.from_service_account_info(credentials_info)
+    
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    client = gspread.authorize(credentials)
+
+    # Open the Google Sheet
+    sheet = client.open("Streamlit-Responses").sheet1  # Replace with your sheet name
+
+    # Append the data to the sheet
+    sheet.append_row(data)
+
+# Add a section for rating the prediction accuracy
 if st.session_state.predicted_cluster is not None:
     st.subheader("Rate the Accuracy of the Prediction")
     accuracy_rating = st.slider("How accurate was the prediction? (1 = Not Accurate, 5 = Very Accurate)", 1, 5, 3)
@@ -321,3 +342,12 @@ if st.session_state.predicted_cluster is not None:
             st.success("Great! We're glad you found something you like.")
         else:
             st.warning("We're sorry to hear that. Please try again or provide more details for better recommendations.")
+
+        # Save the response to Google Sheets
+        response_data = [
+            age, gender, tribe, occupation, favorite_color, fashion_style, garment_fitting,
+            trouser_style, neck_style, ", ".join(cloth_type), hobbies, color, openness,
+            conscientiousness, extraversion, agreeableness, neuroticism, accuracy_rating,
+            selected_cluster_id, preference
+        ]
+        save_to_google_sheets(response_data)
