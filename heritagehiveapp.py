@@ -261,6 +261,8 @@ if st.button("Get Recommendations"):
 # Function to save responses to Google Sheets
 def save_to_google_sheets(data):
 
+    export GOOGLE_CREDENTIALS='capstoneproject@capstone-project-454519.iam.gserviceaccount.com'
+
     # Authenticate with Google Sheets API
     credentials_json = os.getenv("GOOGLE_CREDENTIALS")
     
