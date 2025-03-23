@@ -263,7 +263,15 @@ def save_to_google_sheets(data):
 
     # Authenticate with Google Sheets API
     credentials_json = os.getenv("GOOGLE_CREDENTIALS")
-    credentials_info = json.loads(credentials_json)
+    
+    if credentials_json is None:
+        raise ValueError("GOOGLE_CREDENTIALS environment variable is not set.")
+    
+    try:
+        credentials_info = json.loads(credentials_json)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"GOOGLE_CREDENTIALS is not a valid JSON string: {e}")
+    
     credentials = service_account.Credentials.from_service_account_info(credentials_info)
     
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
