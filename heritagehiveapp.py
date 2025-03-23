@@ -42,16 +42,16 @@ st.markdown(background_style, unsafe_allow_html=True)
 
 
 # Load trained model
-model = joblib.load(r"C:\Users\baaba\Downloads\kmeans_model_hh.pkl")
+model = joblib.load(r"model_file\kmeans_model_hh.pkl")
 
 # Load scalers and encoder
-min_max_scaler = joblib.load(r"C:\Users\baaba\Downloads\minmax_scaler.pkl")
-scaler = joblib.load(r"C:\Users\baaba\Downloads\scaler (3).pkl")
-encoder = joblib.load(r"C:\Users\baaba\Downloads\label_encoder.pkl")
-product_reduced = np.load(r"C:\Users\baaba\Downloads\similarity_matrix.npy")
-similarity_matrix = np.load(r"C:\Users\baaba\Downloads\similarity_matrix.npy")
-prod_scaler = joblib.load(r"C:\Users\baaba\Downloads\prod_minmax_scaler.pkl")
-product_data = pd.read_csv(r"C:\Users\baaba\Downloads\BrandProductsGendered.csv")
+min_max_scaler = joblib.load(r"model_file\minmax_scaler.pkl")
+scaler = joblib.load(r"model_file\scaler (3).pkl")
+encoder = joblib.load(r"model_file\label_encoder.pkl")
+product_reduced = np.load(r"model_file\similarity_matrix.npy")
+similarity_matrix = np.load(r"model_file\similarity_matrix.npy")
+prod_scaler = joblib.load(r"model_file\prod_minmax_scaler.pkl")
+product_data = pd.read_csv(r"model_file\BrandProductsGendered.csv")
 
 st.title("Fashion Recommendation System")
 
