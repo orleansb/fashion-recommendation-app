@@ -261,7 +261,7 @@ if st.button("Get Recommendations"):
 # Function to save responses to Google Sheets
 def save_to_google_sheets(data):
     if 'google_credentials' in st.secrets:
-        os.environ['GOOGLE_CREDENTIALS'] = json.dumps(st.secrets['google_credentials'])
+        os.environ['GOOGLE_CREDENTIALS'] = st.secrets['google_credentials']  
     else:
         st.error("Google credentials not found in secrets!")
 
