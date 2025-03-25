@@ -259,8 +259,11 @@ if st.button("Get Recommendations"):
 
 # Add a section for rating the prediction accuracy
 # Function to save responses to Google Sheets
+
+from google.auth.exceptions import MalformedError
+
 def save_to_google_sheets(data):
-   try:
+    try:
         # 1. Verify secrets exist
         if 'google_credentials' not in st.secrets:
             st.error("❌ Google credentials not found in secrets!")
@@ -315,8 +318,7 @@ def save_to_google_sheets(data):
             st.error(f"❌ Unexpected error: {str(e)}")
         
         return False
-
-    except Exception as e:
+except Exception as e:
         st.error(f"❌ Critical error: {str(e)}")
         return False
 
