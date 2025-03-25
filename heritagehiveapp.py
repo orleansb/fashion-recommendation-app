@@ -261,20 +261,9 @@ if st.button("Get Recommendations"):
 # Function to save responses to Google Sheets
 def save_to_google_sheets(data):
 
-    GOOGLE_CREDENTIALS='capstoneproject@capstone-project-454519.iam.gserviceaccount.com'
-
-    # Authenticate with Google Sheets API
-    credentials_json = os.getenv("GOOGLE_CREDENTIALS")
+    creds = json.loads(os.environ['GOOGLE_CREDENTIALS'])
+    credentials = service_account.Credentials.from_service_account_info(creds)
     
-    if credentials_json is None:
-        raise ValueError("GOOGLE_CREDENTIALS environment variable is not set.")
-    
-    try:
-        credentials_info = json.loads(credentials_json)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"GOOGLE_CREDENTIALS is not a valid JSON string: {e}")
-    
-    credentials = service_account.Credentials.from_service_account_info(credentials_info)
     
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     client = gspread.authorize(credentials)
