@@ -260,53 +260,65 @@ if st.button("Get Recommendations"):
 # Add a section for rating the prediction accuracy
 # Function to save responses to Google Sheets
 def save_to_google_sheets(data):
-    try:
-    # 1. Check if credentials exist in secrets
+   try:
+        # 1. Verify secrets exist
         if 'google_credentials' not in st.secrets:
             st.error("❌ Google credentials not found in secrets!")
-            st.stop()  # Stop execution if credentials are missing
-    
-        # 2. Safely handle credentials (whether they're string or dict)
+            return False
+
         creds_data = st.secrets['google_credentials']
         
+        # 2. Convert credentials to proper format
         if isinstance(creds_data, str):
-            # If credentials are stored as JSON string
             try:
+                # Try parsing as JSON string
                 creds = json.loads(creds_data)
-            except json.JSONDecodeError as e:
-                st.error(f"❌ Invalid JSON in Google credentials: {str(e)}")
-                st.stop()
+            except json.JSONDecodeError:
+                # If string but not JSON, try evaluating (careful with security)
+                try:
+                    creds = eval(creds_data)  # Only safe if you control the secrets
+                except:
+                    st.error("❌ Credentials string is not valid JSON or Python dict")
+                    return False
         elif isinstance(creds_data, dict):
-            # If credentials are stored as TOML dictionary
             creds = creds_data
         else:
-            st.error("❌ Unexpected credentials format in secrets")
-            st.stop()
-    
-        # 3. Create credentials object
+            st.error("❌ Credentials must be either JSON string or dictionary")
+            return False
+
+        # 3. Validate credential structure
+        required_keys = {
+            'type', 'project_id', 'private_key_id', 
+            'private_key', 'client_email', 'client_id'
+        }
+        if not all(key in creds for key in required_keys):
+            st.error("❌ Missing required credential fields")
+            return False
+
+        # 4. Authorize and save to sheets
         try:
             credentials = service_account.Credentials.from_service_account_info(creds)
             scope = [
-                "https://spreadsheets.google.com/feeds",
+                "https://www.googleapis.com/auth/spreadsheets",
                 "https://www.googleapis.com/auth/drive"
             ]
             client = gspread.authorize(credentials.with_scopes(scope))
-        except Exception as e:
-            st.error(f"❌ Failed to authenticate with Google: {str(e)}")
-            st.stop()
-
-        # 4. Append data to sheet
-        try:
             sheet = client.open("Streamlit-Responses").sheet1
             sheet.append_row(data)
-            st.success("✅ Data successfully saved to Google Sheets!")
+            st.success("✅ Data saved successfully!")
+            return True
+        except MalformedError:
+            st.error("❌ Invalid credential format (malformed private key)")
         except gspread.exceptions.APIError as e:
-            st.error(f"❌ Google Sheets API error: {str(e)}")
+            st.error(f"❌ Sheets API error: {str(e)}")
         except Exception as e:
-            st.error(f"❌ Failed to save data: {str(e)}")
-    
+            st.error(f"❌ Unexpected error: {str(e)}")
+        
+        return False
+
     except Exception as e:
-        st.error(f"❌ Unexpected error: {str(e)}")
+        st.error(f"❌ Critical error: {str(e)}")
+        return False
 
 # Add a section for rating the prediction accuracy
 if st.session_state.predicted_cluster is not None:
