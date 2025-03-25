@@ -260,23 +260,53 @@ if st.button("Get Recommendations"):
 # Add a section for rating the prediction accuracy
 # Function to save responses to Google Sheets
 def save_to_google_sheets(data):
-    if 'google_credentials' in st.secrets:
-        os.environ['GOOGLE_CREDENTIALS'] = st.secrets['google_credentials']  
+    try:
+    # 1. Check if credentials exist in secrets
+    if 'google_credentials' not in st.secrets:
+        st.error("❌ Google credentials not found in secrets!")
+        st.stop()  # Stop execution if credentials are missing
+
+    # 2. Safely handle credentials (whether they're string or dict)
+    creds_data = st.secrets['google_credentials']
+    
+    if isinstance(creds_data, str):
+        # If credentials are stored as JSON string
+        try:
+            creds = json.loads(creds_data)
+        except json.JSONDecodeError as e:
+            st.error(f"❌ Invalid JSON in Google credentials: {str(e)}")
+            st.stop()
+    elif isinstance(creds_data, dict):
+        # If credentials are stored as TOML dictionary
+        creds = creds_data
     else:
-        st.error("Google credentials not found in secrets!")
+        st.error("❌ Unexpected credentials format in secrets")
+        st.stop()
 
-    creds = json.loads(os.environ['GOOGLE_CREDENTIALS'])
-    credentials = service_account.Credentials.from_service_account_info(creds)
-    
-    
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    client = gspread.authorize(credentials)
+    # 3. Create credentials object
+    try:
+        credentials = service_account.Credentials.from_service_account_info(creds)
+        scope = [
+            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        client = gspread.authorize(credentials.with_scopes(scope))
+    except Exception as e:
+        st.error(f"❌ Failed to authenticate with Google: {str(e)}")
+        st.stop()
 
-    # Open the Google Sheet
-    sheet = client.open("Streamlit-Responses").sheet1  # Replace with your sheet name
+    # 4. Append data to sheet
+    try:
+        sheet = client.open("Streamlit-Responses").sheet1
+        sheet.append_row(data)
+        st.success("✅ Data successfully saved to Google Sheets!")
+    except gspread.exceptions.APIError as e:
+        st.error(f"❌ Google Sheets API error: {str(e)}")
+    except Exception as e:
+        st.error(f"❌ Failed to save data: {str(e)}")
 
-    # Append the data to the sheet
-    sheet.append_row(data)
+except Exception as e:
+    st.error(f"❌ Unexpected error: {str(e)}")
 
 # Add a section for rating the prediction accuracy
 if st.session_state.predicted_cluster is not None:
