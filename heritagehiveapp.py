@@ -260,6 +260,10 @@ if st.button("Get Recommendations"):
 # Add a section for rating the prediction accuracy
 # Function to save responses to Google Sheets
 def save_to_google_sheets(data):
+    if 'google_credentials' in st.secrets:
+        os.environ['GOOGLE_CREDENTIALS'] = json.dumps(st.secrets['google_credentials'])
+    else:
+        st.error("Google credentials not found in secrets!")
 
     creds = json.loads(os.environ['GOOGLE_CREDENTIALS'])
     credentials = service_account.Credentials.from_service_account_info(creds)
