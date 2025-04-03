@@ -142,6 +142,17 @@ neuroticism = np.mean([
     st.slider("I use clothing as a means of self-expression and emotional release.", 0, 5, 3)
 ])
 
+if "all_responses_df" not in st.session_state:
+    st.session_state.all_responses_df = pd.DataFrame(columns=[
+        "Age", "Gender", "Tribe", "Occupation", "Favorite Color",
+        "Fashion Style", "Garment Fitting", "Trouser Style", "Neck Style",
+        "Cloth Type", "Hobbies", "Color Preference", "Openness",
+        "Conscientiousness", "Extraversion", "Agreeableness", "Neuroticism",
+        "Predicted Cluster", "Accuracy Rating", "Selected Cluster", "Preference"
+    ])
+
+
+    
 predicted_cluster =[]
 
 # Ensure session state variables are initialized
@@ -174,7 +185,7 @@ if st.button("Predict Clothing Preferences"):
     prediction = model.predict(user_input_scaled)
 
     cluster_names = {
-    0: """Elegant Minimalists  
+        0: """Elegant Minimalists  
     You prefer clean, classic, and timeless fashion.  
     Your wardrobe consists of neutral colors, fitted garments, and smart-casual or formal wear.  
     Functionality and simplicity define your style.""",
@@ -201,8 +212,41 @@ if st.button("Predict Clothing Preferences"):
     Whether at the gym or out and about, your style is active, comfortable, and effortless."""
     }
 
+    
+
     st.session_state.predicted_cluster = prediction[0]  
     predicted_name = cluster_names.get(st.session_state.predicted_cluster, "Unknown Cluster")
+
+    new_response = {
+        "Age": age, 
+        "Gender": gender, 
+        "Tribe": tribe, 
+        "Occupation": occupation,
+        "Favorite Color": favorite_color, 
+        "Fashion Style": fashion_style,
+        "Garment Fitting": garment_fitting, 
+        "Trouser Style": trouser_style,
+        "Neck Style": neck_style, 
+        "Cloth Type": ", ".join(cloth_type),
+        "Hobbies": hobbies, 
+        "Color Preference": color,
+        "Openness": openness, 
+        "Conscientiousness": conscientiousness,
+        "Extraversion": extraversion, 
+        "Agreeableness": agreeableness,
+        "Neuroticism": neuroticism, 
+        "Predicted Cluster": prediction[0],
+        "Accuracy Rating": None,  # Will be filled later
+        "Selected Cluster": None,  # Will be filled later
+        "Preference": None        # Will be filled later
+    }
+    
+    # Append to the main DataFrame
+    st.session_state.all_responses_df = pd.concat([
+        st.session_state.all_responses_df, 
+        pd.DataFrame([new_response])
+    ], ignore_index=True)
+    
 
     # Display results
     st.success(predicted_name) 
@@ -257,70 +301,10 @@ if st.button("Get Recommendations"):
                 else:
                     st.write("Image not found")  # Debugging: Indicate if the image is missing
 
+
 # Add a section for rating the prediction accuracy
 # Function to save responses to Google Sheets
 
-from google.auth.exceptions import MalformedError
-
-def save_to_google_sheets(data):
-    try:
-        # 1. Verify secrets exist
-        if 'google_credentials' not in st.secrets:
-            st.error("❌ Google credentials not found in secrets!")
-            return False
-
-        creds_data = st.secrets['google_credentials']
-        
-        # 2. Convert credentials to proper format
-        if isinstance(creds_data, str):
-            try:
-                # Try parsing as JSON string
-                creds = json.loads(creds_data)
-            except json.JSONDecodeError:
-                # If string but not JSON, try evaluating (careful with security)
-                try:
-                    creds = eval(creds_data)  # Only safe if you control the secrets
-                except:
-                    st.error("❌ Credentials string is not valid JSON or Python dict")
-                    return False
-        elif isinstance(creds_data, dict):
-            creds = creds_data
-        else:
-            st.error("❌ Credentials must be either JSON string or dictionary")
-            return False
-
-        # 3. Validate credential structure
-        required_keys = {
-            'type', 'project_id', 'private_key_id', 
-            'private_key', 'client_email', 'client_id'
-        }
-        if not all(key in creds for key in required_keys):
-            st.error("❌ Missing required credential fields")
-            return False
-
-        # 4. Authorize and save to sheets
-        try:
-            credentials = service_account.Credentials.from_service_account_info(creds)
-            scope = [
-                "https://www.googleapis.com/auth/spreadsheets",
-                "https://www.googleapis.com/auth/drive"
-            ]
-            client = gspread.authorize(credentials.with_scopes(scope))
-            sheet = client.open("Streamlit-Responses").sheet1
-            sheet.append_row(data)
-            st.success("✅ Data saved successfully!")
-            return True
-        except MalformedError:
-            st.error("❌ Invalid credential format (malformed private key)")
-        except gspread.exceptions.APIError as e:
-            st.error(f"❌ Sheets API error: {str(e)}")
-        except Exception as e:
-            st.error(f"❌ Unexpected error: {str(e)}")
-        
-        return False
-except Exception as e:
-        st.error(f"❌ Critical error: {str(e)}")
-        return False
 
 # Add a section for rating the prediction accuracy
 if st.session_state.predicted_cluster is not None:
@@ -384,17 +368,20 @@ if st.session_state.predicted_cluster is not None:
                 st.write("Image not found")  # Debugging: Indicate if the image is missing
 
         preference = st.radio("Do you prefer these clothes?", ("Yes", "No"))
-        
+
+         last_idx = len(st.session_state.all_responses_df) - 1
+            st.session_state.all_responses_df.at[last_idx, "Accuracy Rating"] = accuracy_rating
+            st.session_state.all_responses_df.at[last_idx, "Selected Cluster"] = selected_cluster_id
+            st.session_state.all_responses_df.at[last_idx, "Preference"] = preference
+
+        if st.button("Save Data (Admin Only)"):
+            st.session_state.all_responses_df.to_csv("private_responses.csv", index=False)
+            st.success("Data saved securely!")
         if preference == "Yes":
             st.success("Great! We're glad you found something you like.")
+            
         else:
-            st.warning("We're sorry to hear that. Please try again or provide more details for better recommendations.")
+            st.warning("We're sorry to hear that. Please try again for better recommendations.")
+           
 
-        # Save the response to Google Sheets
-        response_data = [
-            age, gender, tribe, occupation, favorite_color, fashion_style, garment_fitting,
-            trouser_style, neck_style, ", ".join(cloth_type), hobbies, color, openness,
-            conscientiousness, extraversion, agreeableness, neuroticism, accuracy_rating,
-            selected_cluster_id, preference
-        ]
-        save_to_google_sheets(response_data)
+      
