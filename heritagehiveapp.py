@@ -369,10 +369,10 @@ if st.session_state.predicted_cluster is not None:
 
         preference = st.radio("Do you prefer these clothes?", ("Yes", "No"))
 
-         last_idx = len(st.session_state.all_responses_df) - 1
-            st.session_state.all_responses_df.at[last_idx, "Accuracy Rating"] = accuracy_rating
-            st.session_state.all_responses_df.at[last_idx, "Selected Cluster"] = selected_cluster_id
-            st.session_state.all_responses_df.at[last_idx, "Preference"] = preference
+        last_idx = len(st.session_state.all_responses_df) - 1
+        st.session_state.all_responses_df.at[last_idx, "Accuracy Rating"] = accuracy_rating
+        st.session_state.all_responses_df.at[last_idx, "Selected Cluster"] = selected_cluster_id
+        st.session_state.all_responses_df.at[last_idx, "Preference"] = preference
 
         if st.button("Save Data (Admin Only)"):
             st.session_state.all_responses_df.to_csv("private_responses.csv", index=False)
